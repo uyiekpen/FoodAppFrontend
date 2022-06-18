@@ -1,12 +1,18 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import {Link} from "react-router-dom"
+import {Link, useNavigate} from "react-router-dom"
 import styled from 'styled-components'
 import {yupResolver} from "@hookform/resolvers/yup"
 import * as yup from "yup"
+import pix from "./pix1.jpg"
+import axios from 'axios'
 
 
 const Register = () => {
+const navigate = useNavigate()
+const [image , setImage] = useState(pix)
+const [avatar , setAvatar ] = useState("")
+
 const registerSchema = yup.object().shape({
     username: yup.string().required("this feild cannot be empty"),
     email: yup.string().email().required("this feild cannot be empty"),
@@ -19,49 +25,93 @@ const registerSchema = yup.object().shape({
 const {
     register,
     reset,
-    handleSubmit,
+	handleSubmit,
     formState: {errors}
 
 } = useForm({
     resolver: yupResolver(registerSchema)
 })
 
+const handleImage = (e) => {
+	const file = e.target.files[0]
+	const save = URL.createObjectURL(file)
+	setImage(save)
+	setAvatar(file)
+}
+
+const onSubmit = handleSubmit(async (value) => {
+	console.log(value);
+	const { userName, email, password } = value;
+	const url = "http://localhost:5346/api/register";
+
+	const formData = new FormData();
+	formData.append("username", userName);
+	formData.append("email", email);
+	formData.append("password", password);
+	formData.append("avatar", avatar);
+
+	const config = {
+		"content-type": "multipart/form-data",
+		onUploadProgress: (ProgressEvent) => {
+			const { loaded, total } = ProgressEvent;
+			const percent = Math.floor((loaded * 100) / total);
+			console.log(percent);
+		},
+	};
+
+	const options = {
+		onUploadProgress: (ProgressEvent) => {
+			const { loaded, total } = ProgressEvent;
+			const percent = Math.floor((loaded * 100) / total);
+			console.log(percent);
+		},
+	};
+
+	await axios.post(url, formData, config).then((res) => {
+		console.log("Error Data: ", res);
+	});
+
+	navigate("/signin");
+});
+
   return (
     <Component> 
         <Wrapper>
            <Card>
-           <Form>   
-                <ImageHolder>
-                    <Image src="/assets/pix5.jpg"/>
-                    <ImageLabel htmlFor='pix'>upload image</ImageLabel>
-                    <ImageInput
-                        id="pix"
-                        type ="file"
-                        accept='image/*'
-                    />
-                </ImageHolder>
+		   <ImageHolder>
+		   <Image src={image}/>
+		   <ImageLabel htmlFor='pix'>upload image</ImageLabel>
+		   <ImageInput
+			   id="pix"
+			   type ="file"
+			   onChange={handleImage}
+			   accept='image/*'
+		   />
+	   </ImageHolder>
+           <Form onSubmit={onSubmit} type="multipart/form-data">  
 
                 <Holder>
                     <Label>Username</Label>
-                    <Input placeholder='username' {...Register}/>
+                    <Input placeholder='username' {...register("username")}/>
                     <Error>{errors.message && errors?.message.username}</Error>
                 </Holder>
                 <Holder>
                 <Label>Email</Label>
-                <Input placeholder='email' {...register}/>
+                <Input placeholder='email' {...register("email")}/>
                 <Error>{errors.message && errors?.message.email}</Error>
                 </Holder>
                 <Holder>
                 <Label>Password</Label>
-                <Input placeholder='password' {...register}/>
+                <Input placeholder='password' {...register("password")}/>
                     <Error>{errors.message && errors?.message.password}</Error>
                 </Holder>
                 <Holder>
                 <Label>Confirm Password</Label>
-                <Input placeholder='confirm password' {...register}/>
+                <Input placeholder='confirm password' {...register("comfirm")}/>
                 <Error>{errors.message && errors?.message.confirm}</Error>
                 </Holder>
-                <Button>Submit</Button>
+                <Button type="submit" onClick={()=>{
+				}}>Submit</Button>
 				<Div>
 					Already have an Account? <Span to="signin">Sign in Here</Span>
 				</Div>
@@ -172,7 +222,7 @@ display: flex;
 	align-items: flex-start;
 	margin-top: 10px;
 `
-const Form = styled.div`
+const Form = styled.form`
 
 display : flex;
 flex-direction:column ;
